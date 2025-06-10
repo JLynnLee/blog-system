@@ -1,0 +1,6 @@
+database:
+    type: sqlite3
+    name: blog.db
+
+server:
+    addr: ":8080"
