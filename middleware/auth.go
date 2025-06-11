@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/JLynnLee/go-blog/models"
+	"github.com/JLynnLee/go-blog/model"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -9,9 +9,8 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		session, err := models.Store.Get(c.Request, "session-name")
+		session, err := model.GetSession(c)
 		if err != nil {
-			//c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "无法获取 session"})
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
 			return

@@ -1,6 +1,17 @@
 database:
-    type: sqlite3
-    name: blog.db
+    type: sqlite
+
+sqlite:
+    path: blog.db
+
+mysql:
+    dsn: root:123456@tcp(127.0.0.1:3306)/test?charset=utf8mb4&parseTime=True&loc=Local
+
+session:
+    secret_key: secret-key
+
+redis:
+    addr: 127.0.0.1:6379
 
 server:
-    addr: ":8080"
+    port: 8080

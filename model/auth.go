@@ -1,4 +1,4 @@
-package models
+package model
 
 import (
 	"github.com/gin-gonic/gin"
@@ -88,17 +88,12 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	session, _ := Store.Get(c.Request, "session-name")
-	session.Values["user_id"] = user.ID
-	err := session.Save(c.Request, c.Writer)
+	session, err := GetSession(c)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"error":  "无法保存 session",
-			"detail": err.Error(),
-		})
-		return
+		panic("无法获取 session")
 	}
-
+	session.Values["user_id"] = user.ID
+	session.Save(c.Request, c.Writer)
 	c.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -117,7 +112,10 @@ func CreatePost(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	session, _ := Store.Get(c.Request, "session-name")
+	session, err := GetSession(c)
+	if err != nil {
+		panic("无法获取 session")
+	}
 	session.Options.MaxAge = -1
 	session.Save(c.Request, c.Writer)
 	c.Redirect(http.StatusSeeOther, "/login")

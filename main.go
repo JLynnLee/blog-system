@@ -1,58 +1,44 @@
 package main
 
 import (
-	"github.com/JLynnLee/go-blog/handlers"
+	"github.com/JLynnLee/go-blog/config"
 	"github.com/JLynnLee/go-blog/middleware"
-	"github.com/JLynnLee/go-blog/models"
+	"github.com/JLynnLee/go-blog/repository"
+	"github.com/JLynnLee/go-blog/route"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"net/http"
 )
 
+const sqlite = "sqlite"
+
 func main() {
+	cfg, err := config.LoadConfig("config.yaml")
+	if err != nil {
+		panic("无法加载配置: " + err.Error())
+	}
+
+	var db *gorm.DB
+	// 初始化数据库
+	if cfg.Database.Type == sqlite {
+		db = repository.InitSQLite(cfg.Sqlite.Path)
+	} else {
+		db = repository.InitMySql(cfg.Mysql.Dsn)
+	}
 	// 初始化 Gin
-	r := gin.Default()
-
-	// 使用绝对路径确保 SQLite 正确创建/读取数据库文件
-	db, err := gorm.Open(sqlite.Open("D:/workspace/go/blog-system/blog.db"), &gorm.Config{})
-	if err != nil {
-		panic("无法连接数据库: " + err.Error())
-	}
-
-	// 自动迁移模型
-	err = db.AutoMigrate(&models.User{}, &models.Post{})
-	if err != nil {
-		panic("数据库迁移失败: " + err.Error())
-	}
-
+	engine := gin.Default()
 	// 注册中间件
-	r.Use(func(c *gin.Context) {
+	engine.Use(func(c *gin.Context) {
 		c.Set("db", db)
+		c.Set("session_secret_key", cfg.Session.SecretKey)
 		c.Next()
-	})
+	}, middleware.ExceptionMiddleware())
 
 	// 设置模板引擎
-	r.LoadHTMLGlob("templates/*")
+	engine.LoadHTMLGlob("views/*")
 
 	// 路由
-	r.GET("/", middleware.AuthMiddleware(), handlers.GetPosts)
-	r.GET("/create", middleware.AuthMiddleware(), func(c *gin.Context) {
-		c.HTML(http.StatusOK, "create.html", nil)
-	})
-	r.POST("/create", middleware.AuthMiddleware(), handlers.CreatePost)
+	route.SetupRouter(engine)
 
-	r.GET("/login", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "login.html", nil)
-	})
-	r.POST("/login", handlers.Login)
-
-	r.GET("/register", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "register.html", nil)
-	})
-	r.POST("/register", handlers.Register)
-	r.POST("/logout", middleware.AuthMiddleware(), handlers.Logout)
-
-	r.Run(":8080")
+	engine.Run(":8080")
 }
