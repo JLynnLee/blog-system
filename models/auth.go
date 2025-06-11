@@ -1,16 +1,22 @@
 package models
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"net/http"
 )
 
-// Store 假设在全局或中间件中已定义 session store
-var Store = sessions.NewCookieStore([]byte("secret-key")) // 设置密钥
+func GetPosts(c *gin.Context) {
+	db := c.MustGet("db").(*gorm.DB)
+	var posts []Post
+	db.Preload("User").Where("user_id = ?", c.MustGet("user_id")).Find(&posts)
+
+	c.HTML(http.StatusOK, "index.html", gin.H{
+		"Posts": posts,
+	})
+}
+
 func Register(c *gin.Context) {
 	var user User
 	if err := c.ShouldBind(&user); err != nil {
@@ -103,10 +109,16 @@ func CreatePost(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println("post:", post)
 	post.UserID = userID
 	db := c.MustGet("db").(*gorm.DB)
 	db.Create(&post)
 
 	c.Redirect(http.StatusSeeOther, "/")
+}
+
+func Logout(c *gin.Context) {
+	session, _ := Store.Get(c.Request, "session-name")
+	session.Options.MaxAge = -1
+	session.Save(c.Request, c.Writer)
+	c.Redirect(http.StatusSeeOther, "/login")
 }

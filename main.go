@@ -52,6 +52,7 @@ func main() {
 		c.HTML(http.StatusOK, "register.html", nil)
 	})
 	r.POST("/register", handlers.Register)
+	r.POST("/logout", middleware.AuthMiddleware(), handlers.Logout)
 
 	r.Run(":8080")
 }

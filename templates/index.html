@@ -4,6 +4,9 @@
     <title>我的博客</title>
 </head>
 <body>
+    <form  method="POST" action="/logout">
+        <button type="submit">登出</button>
+    </form>
     <h1>所有文章</h1>
 
     {{ range .Posts }}
